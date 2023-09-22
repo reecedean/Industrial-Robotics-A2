@@ -1,1 +1,1 @@
-# Industrial-Robotics-A2 (serious)
+# Industrial-Robotics-A2
