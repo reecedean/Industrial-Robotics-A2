@@ -2,19 +2,21 @@ classdef TM5700 < RobotBaseClass
     %% TM5-700 robot
 
     properties(Access = public)              
-        plyFileNameStem = 'TM5-700'; % .ply files pulled from LinearUR5 & UR3
+        plyFileNameStem = 'TM5700'; % .ply files pulled from LinearUR5 & UR3
     end
     
     methods
  %% Define robot Function 
-        function self = LinearUR3(baseTr) 
+ function self = TM5700(baseTr) 
 			self.CreateModel();
+            q0 = [0,0,0,0,0,0]
             if nargin < 1			
 				baseTr = transl(0,0,0.5); 			
             end
             self.model.base = self.model.base.T * baseTr * trotx(pi/2) * troty(pi/2);
             
-            self.PlotAndColourRobot();         
+            self.model.plot(q0);
+            % self.PlotAndColourRobot();         
         end
 
 %% Create the robot model
