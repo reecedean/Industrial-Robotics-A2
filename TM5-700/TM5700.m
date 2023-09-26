@@ -20,11 +20,17 @@ classdef TM5700 < handle
                 self.toolTr = toolTrData.tool;
                 self.toolFilename = [toolFilename,'.ply'];
             end
+<<<<<<< HEAD
           
             self.CreateModel();
 			self.model.base = self.model.base.T * baseTr;
             self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
+=======
+            self.model.base = self.model.base.T * baseTr * trotx(pi/2) * troty(pi/2);
+            self.PlotAndColourRobot(); 
+        end
+>>>>>>> 20af6bd013a8f9b733c0b03cdfc21a893d6a53de
 
             drawnow
         end
