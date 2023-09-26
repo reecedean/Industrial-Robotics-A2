@@ -2,32 +2,21 @@ classdef TM5700 < handle
     %% TM5-700 robot
 
     properties(Access = public)              
-        % plyFileNameStem = 'LinearUR3'; % .ply files pulled from LinearUR5 & UR3
+        plyFileNameStem = 'TM5-700'; % .ply files pulled from LinearUR5 & UR3
     end
     
     methods
-        %% Constructor
-        function self = TM5700(baseTr,useTool,toolFilename)
-            if nargin < 3
-                if nargin == 2
-                    error('If you set useTool you must pass in the toolFilename as well');
-                elseif nargin == 0 % Nothing passed
-                    baseTr = transl(0,0,0);  
-                end             
-            else % All passed in 
-                self.useTool = useTool;
-                toolTrData = load([toolFilename,'.mat']);
-                self.toolTr = toolTrData.tool;
-                self.toolFilename = [toolFilename,'.ply'];
+ %% Define robot Function 
+        function self = LinearUR3(baseTr) 
+			self.CreateModel();
+            if nargin < 1			
+				baseTr = transl(0,0,0.5); 			
             end
-          
-            self.CreateModel();
-			self.model.base = self.model.base.T * baseTr;
-            self.model.tool = self.toolTr;
-            self.PlotAndColourRobot();
-
-            drawnow
+            self.model.base = self.model.base.T * baseTr * trotx(pi/2) * troty(pi/2);
+            
+            self.PlotAndColourRobot();         
         end
+
 %% Create the robot model
         function CreateModel(self)   
             % Create the TM5-700 model 
