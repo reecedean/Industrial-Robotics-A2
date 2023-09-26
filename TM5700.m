@@ -43,3 +43,5 @@ classdef TM5700 < handle
         end
     end
 end
+
+Test
