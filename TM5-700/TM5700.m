@@ -1,4 +1,4 @@
-classdef TM5700 < handle
+classdef TM5700 < RobotBaseClass
     %% TM5-700 robot
 
     properties(Access = public)              
@@ -21,7 +21,7 @@ classdef TM5700 < handle
         function CreateModel(self)   
             % Create the TM5-700 model 
             link(1) = Link('d',0.1451,'a',0,'alpha',-pi/2,'qlim',deg2rad([-270 270]), 'offset',0);
-            link(2) = Link('d',0,'a',0329,'alpha',0,'qlim', deg2rad([-180 180]), 'offset',-pi/2);
+            link(2) = Link('d',0,'a',0.329,'alpha',0,'qlim', deg2rad([-180 180]), 'offset',-pi/2);
             link(3) = Link('d',0,'a',0.3115,'alpha',0,'qlim', deg2rad([-155 155]), 'offset', 0);
             link(4) = Link('d',-0.1222,'a',0,'alpha',pi/2,'qlim',deg2rad([-180 180]),'offset', 0);
             link(5) = Link('d',0.106,'a',0,'alpha',pi/2,'qlim',deg2rad([-180,180]), 'offset',0);
