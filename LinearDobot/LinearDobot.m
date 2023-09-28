@@ -10,7 +10,7 @@ classdef LinearDobot < RobotBaseClass
 
     properties(Access =public)   
         plyFileNameStem = 'LinearDobot';
-
+        
         %> defaultRealQ 
         defaultRealQ  = [0,pi/4,pi/4,pi/4,0,0];
     end
