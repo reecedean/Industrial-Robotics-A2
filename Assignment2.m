@@ -1,6 +1,7 @@
 classdef Assignment2 < handle
     properties
         ur5
+        yaskawa
         environment
         cups
         cupsEnd
@@ -21,11 +22,15 @@ classdef Assignment2 < handle
 
             self.ur5.model.teach(startJoint)
 
+            % Create the Yaskawa
+            self.yaskawa = YaskawaGP4();
+
+
             % Load the starting position of the cups
             self.loadCups()
 
             % Run UR5 to place the cup
-            self.PlaceCup()
+            %self.PlaceCup()
            
         end
         function PlaceCup(self)
