@@ -29,10 +29,11 @@ classdef Assignment2 < handle
            
         end
         function PlaceCup(self)
-        % Get the number of bricks 
+        % Get the number of cups
         cupNum = length(self.cups);
         % intial state of cup picked up is false
         cuppickedUp = false;
+        currentCupHandle = []; % Handle for graphical cup object
             for i = 1:5
                 % Loop twice for the pickup of the brick, then the drop off
                 % of the brick
@@ -80,9 +81,28 @@ classdef Assignment2 < handle
                             disp('animating');
                             % Animate the robot to the next joint configuration
                             self.ur5.model.animate(qMatrix(j, :))
+        
+                            % Update the position of the cup when it's picked up
+                            if cuppickedUp
+                                effPos = self.ur5.model.fkine(qMatrix(j, :)).t;
+                                effPos(3) = effPos(3) - 0.2;  % Offset in Z direction
+                                % Delete the previous graphical representation of the cup
+                                if ~isempty(currentCupHandle)
+                                    delete(currentCupHandle);
+                                end
+                                currentCupHandle = PlaceObject('Cup4.ply', effPos');
+                            end
                             drawnow();
                         end
+                        
                     end
+                                % If placing the cup down, remove the currentCupHandle
+                    if cuppickedUp
+                        pause(3);
+                        delete(currentCupHandle);
+                        currentCupHandle = [];
+                    end
+
                     cuppickedUp = ~cuppickedUp
                 end
             end
