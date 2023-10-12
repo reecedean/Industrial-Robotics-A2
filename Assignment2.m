@@ -14,8 +14,8 @@ classdef Assignment2 < handle
             
             % Hold on the have more plots in the figure
             hold on
-            % Create linear UR3 object
-           
+
+            % Create linear UR5 object
             self.ur5 = LinearUR5custom();
             startJoint = [0 0 0 0 270*pi/180 -pi/2 0];
             self.ur5.model.animate(startJoint);
@@ -38,7 +38,6 @@ classdef Assignment2 < handle
         cupNum = length(self.cups);
         % intial state of cup picked up is false
         cuppickedUp = false;
-        currentCupHandle = []; % Handle for graphical cup object
             for i = 1:5
                 % Loop twice for the pickup of the brick, then the drop off
                 % of the brick
@@ -86,26 +85,9 @@ classdef Assignment2 < handle
                             disp('animating');
                             % Animate the robot to the next joint configuration
                             self.ur5.model.animate(qMatrix(j, :))
-        
-                            % Update the position of the cup when it's picked up
-                            if cuppickedUp
-                                effPos = self.ur5.model.fkine(qMatrix(j, :)).t;
-                                effPos(3) = effPos(3) - 0.2;  % Offset in Z direction
-                                % Delete the previous graphical representation of the cup
-                                if ~isempty(currentCupHandle)
-                                    delete(currentCupHandle);
-                                end
-                                currentCupHandle = PlaceObject('Cup4.ply', effPos');
-                            end
                             drawnow();
                         end
                         
-                    end
-                                % If placing the cup down, remove the currentCupHandle
-                    if cuppickedUp
-                        pause(3);
-                        delete(currentCupHandle);
-                        currentCupHandle = [];
                     end
 
                     cuppickedUp = ~cuppickedUp
@@ -113,7 +95,10 @@ classdef Assignment2 < handle
             end
         end
         
+        function CupTr()
+            CupPos = self.cups{cupNumber}.getpos();
 
+        end 
 
 
         function loadCups(self)
@@ -128,23 +113,8 @@ classdef Assignment2 < handle
 
             % Plot each of the start cups at their location 
             for i = 1:length(self.cups)
-                cupPos = self.cups{i};
-                
-                cupxyz = cupPos(1:3);
-                cuprpy = cupPos(6);
-                % Convert to radians for MATLAB trig functions
-                cuprpy = deg2rad(cuprpy);
-                
-                h = PlaceObject('Cup4.ply', cupxyz);
-                % self.brick_handles{i} = h;
-                % 
-                % 
-                % verts = get(h, 'Vertices');
-                % verts = verts - brickxyz;  
-                % rotationMatrix = trotz(brickrpy);
-                % verts = [verts, ones(size(verts, 1), 1)] * rotationMatrix';
-                % verts = verts(:, 1:3) + brickxyz;  
-                % set(h, 'Vertices', verts);
+                cupPos = transl(self.cups{i}(1:3));
+                self.cups{i} = Cup(cupPos);
             end
             self.cupsEnd = {
                 [-0.5,-1.5,0.8,0,0,0]
@@ -154,6 +124,5 @@ classdef Assignment2 < handle
                 [-0.5,-1.5,0.8,0,0,0]
                 };
         end
-
     end
 end
