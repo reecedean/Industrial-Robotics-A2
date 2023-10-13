@@ -10,7 +10,7 @@ classdef Cup < RobotBaseClass
         function self = Cup(baseTr) 
 			self.CreateModel();
             if nargin < 1			
-				baseTr = transl(0,0,0);			
+				baseTr = transl(0,0,-0.1);			
             end
             self.model.base = baseTr
             self.PlotAndColourRobot();
