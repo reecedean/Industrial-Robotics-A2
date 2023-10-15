@@ -32,9 +32,9 @@ classdef Assignment2 < handle
             % Load the starting position of the cups
             self.loadCups()
             
-            self.
+            % self.yaskawa.model.teach()
             % Run UR5 to place the cup
-            %self.yaskawaMove()
+            self.yaskawaMove()
            
         end
         function ur5Move(self)
@@ -136,15 +136,15 @@ classdef Assignment2 < handle
                     % location
                     for l = 1:2
                         % intial joint config
-                        q0 = self.ur5.model.getpos();
+                        q0 = self.yaskawa.model.getpos();
                         % On the first iteration, get the midpoint
                         % joint angles. On the second iteration, get the
                         % brick transform joint angles
                         if l == 1
-                            q1 = [-0.0073 0.9076 -0.1902 1.2182 6.2832 -1.5621 -1.4888];
+                            q1 = [0 0 0 0 0 0]
                             % q1 = self.robot.model.ikcon(T_mid, q0)
                         else
-                            q1 = self.ur5.model.ikcon(T, q0)
+                            q1 = self.yaskawa.model.ikcon(T, q0)
                         end
     
                         % Use trapezoidal Velocity profile to move from q0 to q1
@@ -169,6 +169,7 @@ classdef Assignment2 < handle
                     end
                     cuppickedUp_yask = ~cuppickedUp_yask;
                 end
+                pos = self.yaskawa.model.getpos()
 
                 
             end
