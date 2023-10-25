@@ -10,7 +10,7 @@ classdef YaskawaGP4 < RobotBaseClass
         function self = YaskawaGP4(baseTr)
             self.CreateModel();
             if nargin < 1
-                baseTr = transl(0.8,0,0.8)
+                baseTr = transl(0.8,0.25,0.8)
 
             end
             self.model.base = self.model.base.T * baseTr;

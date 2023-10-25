@@ -13,7 +13,7 @@ classdef Assignment2 < handle
     methods 
         function self = Assignment2()
             % Set up the workspace environment
-            self.environment = CafeEnvironment()
+            self.environment = CafeEnvironment();
             
             % Hold on the have more plots in the figure
             hold on
@@ -23,18 +23,23 @@ classdef Assignment2 < handle
             startJoint = [0 0 0 0 270*pi/180 -pi/2 0];
             self.ur5.model.animate(startJoint);
 
-            self.ur5.model.teach(startJoint)
+            %self.yaskawa.model.teach(startJoint);
 
+            
             % Create the Yaskawa
             self.yaskawa = YaskawaGP4();
 
+            startJoint2 = [2.9671 -0.4346 0.3700  3.1416 0 0];
+            self.yaskawa.model.animate(startJoint2);
+            self.yaskawa.model.teach(startJoint2);
+
 
             % Load the starting position of the cups
-            self.loadCups()
+            self.loadCups();
             
             % self.yaskawa.model.teach()
             % Run UR5 to place the cup
-            self.yaskawaMove()
+            self.yaskawaMove();
            
         end
         function ur5Move(self)
@@ -54,9 +59,9 @@ classdef Assignment2 < handle
                     % otherwise get transform for the starting brick
                     if cuppickedUp
                         % Define the transformation matrix for the target end effector location
-                        T = transl(cupPosend) * rpy2tr(0, 180, self.cupsEnd{1}(6), 'deg');
+                        T = transl(cupPosend) * rpy2tr(0, 0, self.cupsEnd{1}(6), 'deg');
                     else
-                        T = transl(cupPos) * rpy2tr(0, 180, self.cupsStart{1}(6), 'deg');
+                        T = transl(cupPos) * rpy2tr(0, 0, self.cupsStart{1}(6), 'deg');
                     end
                     % Use a common mid transform between the start and end
                     % brick position 
@@ -70,11 +75,11 @@ classdef Assignment2 < handle
                         % On the first iteration, get the midpoint
                         % joint angles. On the second iteration, get the
                         % brick transform joint angles
+                        T_mid = transl(0, 0, 0) * rpy2tr(0, 180, 0, 'deg');
                         if l == 1
-                            q1 = [-0.0073 0.9076 -0.1902 1.2182 6.2832 -1.5621 -1.4888];
-                            % q1 = self.robot.model.ikcon(T_mid, q0)
+                            q1 = self.yaskawa.model.ikcon(T_mid, q0);
                         else
-                            q1 = self.ur5.model.ikcon(T, q0)
+                            q1 = self.ur5.model.ikcon(T, q0);
                         end
         
                         % Use trapezoidal Velocity profile to move from q0 to q1
@@ -96,15 +101,11 @@ classdef Assignment2 < handle
                             end
                             drawnow();
                         end
-                        
                     end
-
                     cuppickedUp_ur5 = ~cuppickedUp_ur5;
                 end
                 self.cupNumber = self.cupNumber + 1;
             end
-
-        
            
         end
 
@@ -116,7 +117,7 @@ classdef Assignment2 < handle
             for i = 1:1
             % Loop twice for the pickup of the cup, then the drop off
             % of the cup
-                for n = 1:2
+                for n = 1:1
                     % Define the brick start and end locations for target end effector
                     cupPos = self.cupsStart{1}(1:3);
                     cupPosend = self.cupsMid(1:3);
@@ -124,13 +125,13 @@ classdef Assignment2 < handle
                     % otherwise get transform for the starting brick
                     if cuppickedUp_yask
                         % Define the transformation matrix for the target end effector location
-                        T = transl(cupPosend) * rpy2tr(0, 180, self.cupsMid(6), 'deg');
+                        T = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
                     else
-                        T = transl(cupPos) * rpy2tr(0, 180, self.cupsStart{1}(6), 'deg');
+                        T = transl(cupPos) * rpy2tr(0, 180, 0, 'deg');
                     end
                     % Use a common mid transform between the start and end
                     % brick position 
-                    % T_mid = transl(0, 0, 0.7) * rpy2tr(0, 180, 0, 'deg');
+                    T_mid = transl(1, 0, 1.5) * rpy2tr(0, 180, 0, 'deg');
     
                     % Loop twice to get to common midpoint and then brick
                     % location
@@ -141,10 +142,10 @@ classdef Assignment2 < handle
                         % joint angles. On the second iteration, get the
                         % brick transform joint angles
                         if l == 1
-                            q1 = [0 0 0 0 0 0]
-                            % q1 = self.robot.model.ikcon(T_mid, q0)
+                            q1 = [2.9671 -0.4346 0.3700  3.1416 0 0]
+                            %q1 = self.yaskawa.model.ikcon(T_mid, q0)
                         else
-                            q1 = self.yaskawa.model.ikcon(T, q0)
+                            q1 = self.yaskawa.model.ikcon(T, q0);
                         end
     
                         % Use trapezoidal Velocity profile to move from q0 to q1
@@ -169,7 +170,7 @@ classdef Assignment2 < handle
                     end
                     cuppickedUp_yask = ~cuppickedUp_yask;
                 end
-                pos = self.yaskawa.model.getpos()
+                %pos = self.yaskawa.model.getpos()
 
                 
             end
@@ -177,19 +178,22 @@ classdef Assignment2 < handle
         end
         
         function CupTr(self, endEffTr)
-            CupPos = self.cups{self.cupNumber}.model.getpos()
-            self.cups{self.cupNumber}.model.base = endEffTr.T * trotx(pi)
-            self.cups{self.cupNumber}.model.animate(CupPos)
+            CupPos = endEffTr.T;
+            zDir = CupPos(1:3, 3);
+            globalOffset = zDir * 0.2;
+            CupPos(1:3, 4) = CupPos(1:3, 4) + globalOffset
+            self.cups{self.cupNumber}.model.base = CupPos * trotx(0) * troty(-pi/2);
+            self.cups{self.cupNumber}.model.animate(CupPos);
         end 
 
 
         function loadCups(self)
             % Set the start location of the bricks 
             self.cupsStart = {
-                [0.7 0.5 1.25,0,0,0]
-                [0.9,0.5,1.25,0,0,0]
-                [1.1,0.5,1.25,0,0,0]
-                [1.3,0.5,1.25,0,0,0]
+                [1.25 -0.1 1.25,0,0,0]
+                [1.25,0.1,1.25,0,0,0]
+                [1.25,0.3,1.25,0,0,0]
+                [1.25,0.5,1.25,0,0,0]
                 };
 
             % Plot each of the start cups at their location 
@@ -203,7 +207,7 @@ classdef Assignment2 < handle
                 [-0.5,-1.5,0.8,0,0,0]
                 [-0.5,-1.5,0.8,0,0,0]
                 };
-            self.cupsMid = [0.75,-0.5,0.8,0,0,0]
+            self.cupsMid = [0.75,-0.5,0.8,0,0,0];
         end
     end
 end
