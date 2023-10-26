@@ -52,11 +52,11 @@ classdef Assignment2 < handle
                 % Loop twice for the pickup of the cup, then the drop off
                 % of the cup
                 for n = 1:2
-                    % Define the brick start and end locations for target end effector
+                    % Define the cup start and end locations for target end effector
                     cupPos = self.cupsStart{1}(1:3);
                     cupPosend = self.cupsEnd{1}(1:3);
-                    % If the brick is picked up, get to the end brick,
-                    % otherwise get transform for the starting brick
+                    % If the cup is picked up, get to the end cup,
+                    % otherwise get transform for the starting cup
                     if cuppickedUp
                         % Define the transformation matrix for the target end effector location
                         T = transl(cupPosend) * rpy2tr(0, 0, self.cupsEnd{1}(6), 'deg');
@@ -67,14 +67,14 @@ classdef Assignment2 < handle
                     % brick position 
                     % T_mid = transl(0, 0, 0.7) * rpy2tr(0, 180, 0, 'deg');
 
-                    % Loop twice to get to common midpoint and then brick
+                    % Loop twice to get to common midpoint and then cup
                     % location
                     for l = 1:2
                         % intial joint config
                         q0 = self.ur5.model.getpos();
                         % On the first iteration, get the midpoint
                         % joint angles. On the second iteration, get the
-                        % brick transform joint angles
+                        % cup transform joint angles
                         T_mid = transl(0, 0, 0) * rpy2tr(0, 180, 0, 'deg');
                         if l == 1
                             q1 = self.yaskawa.model.ikcon(T_mid, q0);
@@ -118,11 +118,11 @@ classdef Assignment2 < handle
             % Loop twice for the pickup of the cup, then the drop off
             % of the cup
                 for n = 1:1
-                    % Define the brick start and end locations for target end effector
+                    % Define the cup start and end locations for target end effector
                     cupPos = self.cupsStart{1}(1:3);
                     cupPosend = self.cupsMid(1:3);
-                    % If the brick is picked up, get to the end brick,
-                    % otherwise get transform for the starting brick
+                    % If the brick is picked up, get to the end cup,
+                    % otherwise get transform for the starting cup
                     if cuppickedUp_yask
                         % Define the transformation matrix for the target end effector location
                         T = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
@@ -188,7 +188,7 @@ classdef Assignment2 < handle
 
 
         function loadCups(self)
-            % Set the start location of the bricks 
+            % Set the start location of the cups 
             self.cupsStart = {
                 [1.25 -0.1 1.25,0,0,0]
                 [1.25,0.1,1.25,0,0,0]
