@@ -11,7 +11,7 @@ classdef LinearUR5custom < RobotBaseClass
 			self.CreateModel();
             if nargin < 1			
 				% baseTr = eye(4)
-                baseTr = transl(0.8,-1.5,0.8);
+                baseTr = transl(0.8,-1.2,0.8);
 
             end
             self.model.base = self.model.base.T * baseTr * trotx(pi/2) * troty(pi/2);
