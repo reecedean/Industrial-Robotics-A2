@@ -24,7 +24,7 @@ classdef Assignment2 < handle
             self.ur5.model.animate(startJoint);
 
             self.ur5.model.teach(startJoint);
-
+    
             
             % Create the Yaskawa
             self.yaskawa = YaskawaGP4();
