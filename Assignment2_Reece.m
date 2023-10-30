@@ -1,4 +1,4 @@
-classdef Assignment2 < handle
+classdef Assignment2_Reece < handle
     properties
         ur5
         yaskawa
@@ -11,7 +11,7 @@ classdef Assignment2 < handle
     end
     
     methods 
-        function self = Assignment2()
+        function self = Assignment2_Reece()
             % Set up the workspace environment
             self.environment = CafeEnvironment();
             
@@ -36,6 +36,8 @@ classdef Assignment2 < handle
 
             % Load the starting position of the cups
             self.loadCups();
+
+            input('Press enter to continue');
             
             % self.yaskawa.model.teach()
             % Run UR5 to place the cup
@@ -350,7 +352,7 @@ classdef Assignment2 < handle
                         end
                         if l == 2 && n == 2
                             disp("PREPARING COFFEE, PLEASE WAIT :)");
-                            pause(0);
+                            pause(3);
                         end
                     end
                 end
