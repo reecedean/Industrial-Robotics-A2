@@ -15,6 +15,8 @@ classdef Assignment2 < handle
         cuppickedUp_yask
         cuppickedUp_ur5
         ur5State
+        gripperUr5;
+        gripperYaskawa;
     end
     
     methods 
@@ -29,8 +31,6 @@ classdef Assignment2 < handle
             self.ur5 = LinearUR5custom();
             startJoint = [-0.5 0 0 0 270*pi/180 -pi/2 0];
             self.ur5.model.animate(startJoint);
-
-            self.ur5.model.teach(startJoint);
     
             
             % Create the Yaskawa
@@ -44,13 +44,35 @@ classdef Assignment2 < handle
             self.gui.assignment2 = self
             self.gui.updateEndEffectorPositionLabel()
 
+            % Load the grippers
+            self.gripperPos();
             % Load the starting position of the cups
-            self.loadCups();
+            % self.loadCups();
+            % 
+            % % Run yaskawa
+            % self.yaskawaMove();
+           
+           
+        end
 
-            % Run yaskawa
-            self.yaskawaMove();
-           
-           
+        function gripperPos(self)
+            q = self.yaskawa.model.getpos()
+            % get the current end effector position
+            endEff = self.yaskawa.model.fkine(q)
+            % initalise gripper at the current end effector position
+            self.gripperYaskawa = Gripper();
+            % Have gripper follow end effector
+            GripperTr(self, endEff);
+        end
+
+        function GripperTr(self, endEffTr)
+            % Get the positon of the fingers
+            F1q = self.gripperYaskawa.model.getpos();
+            % Set the bases of the finger to the endEff with rotation
+            self.gripperYaskawa.model.base = endEffTr.T * trotx(pi/2);
+            % Animate the fingers
+            self.gripperYaskawa.model.animate(F1q);
+            drawnow();
         end
 
         function ur5Move(self)
@@ -216,8 +238,6 @@ classdef Assignment2 < handle
                                 end
                                 Animate(self,qMatrix,2)
                             end
-                            
-                          
                     end
         
                     if self.yaskState == 1 || self.yaskState == 5 || self.yaskState == 8 || self.yaskState == 9
