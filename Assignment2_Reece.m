@@ -333,7 +333,7 @@ classdef Assignment2_Reece < handle
                     if intersectionPoint(1) > self.lightCurtain.xLims(1) && intersectionPoint(1) < self.lightCurtain.xLims(2)
                         if intersectionPoint(2) > self.lightCurtain.yLims(1) && intersectionPoint(2) < self.lightCurtain.yLims(2)
                             if intersectionPoint(3) > self.lightCurtain.zLims(1) && intersectionPoint(3) < self.lightCurtain.zLims(2)
-                                disp(['Collision with Light Curtain, stopping system', num2str(1)])
+                                disp('Collision with Light Curtain, stopping system');
                                 self.gui.estop = true;
                                 try
                                     delete(self.person);
