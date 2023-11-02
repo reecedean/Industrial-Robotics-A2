@@ -47,31 +47,42 @@ classdef Assignment2 < handle
             % Load the grippers
             self.gripperPos();
             % Load the starting position of the cups
-            % self.loadCups();
-            % 
-            % % Run yaskawa
-            % self.yaskawaMove();
-           
-           
+            self.loadCups();
+
+            % Run yaskawa
+            self.yaskawaMove();
         end
 
         function gripperPos(self)
-            q = self.yaskawa.model.getpos()
-            % get the current end effector position
-            endEff = self.yaskawa.model.fkine(q)
-            % initalise gripper at the current end effector position
-            self.gripperYaskawa = Gripper();
-            % Have gripper follow end effector
-            GripperTr(self, endEff);
+            for i = 1:2
+                if i == 1
+                    q = self.ur5.model.getpos()
+                    endEff = self.ur5.model.fkine(q)
+                    self.gripperUr5 = Gripper();
+                    GripperTr(self, endEff, 1);
+                else
+                    q = self.yaskawa.model.getpos()
+                    endEff = self.yaskawa.model.fkine(q)
+                    self.gripperYaskawa = Gripper();
+                    GripperTr(self, endEff, 2);
+                end
+            end
         end
 
-        function GripperTr(self, endEffTr)
-            % Get the positon of the fingers
-            F1q = self.gripperYaskawa.model.getpos();
-            % Set the bases of the finger to the endEff with rotation
-            self.gripperYaskawa.model.base = endEffTr.T * trotx(pi/2);
-            % Animate the fingers
-            self.gripperYaskawa.model.animate(F1q);
+        function GripperTr(self, endEffTr, robot)
+            if robot == 1
+                gripper = self.gripperUr5
+                endEffTr = endEffTr.T
+                endEffTr(3,4) = endEffTr(3,4) - 0.08
+            else
+                gripper = self.gripperYaskawa
+                endEffTr = endEffTr.T
+            end
+            % Get the positon of the gripper
+            F1q = gripper.model.getpos();
+            gripper.model.base = endEffTr * trotx(pi/2);
+            % Animate the gripper
+            gripper.model.animate(F1q);
             drawnow();
         end
 
@@ -271,6 +282,7 @@ classdef Assignment2 < handle
                 endEff = robot.model.fkine(qMatrix(j, :));
                 % Animate the robot to the next joint configuration
                 robot.model.animate(qMatrix(j, :));
+                GripperTr(self, endEff, robotType)
                 self.gui.updateEndEffectorPositionLabel();
                 if cupPicked
                     CupTr(self, endEff, robotType);
