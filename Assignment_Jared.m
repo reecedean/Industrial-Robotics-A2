@@ -1,4 +1,4 @@
-classdef Assignment2 < handle
+classdef Assignment_Jared < handle
     properties
         ur5
         yaskawa
@@ -11,7 +11,7 @@ classdef Assignment2 < handle
     end
     
     methods 
-        function self = Assignment2()
+        function self = Assignment_Jared()
             % Set up the workspace environment
             self.environment = CafeEnvironment();
             
