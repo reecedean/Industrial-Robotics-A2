@@ -23,7 +23,10 @@ classdef Assignment2 < handle
         function self = Assignment2()
             % Set up the workspace environment
             self.environment = CafeEnvironment();
-            
+            % Set lighting properties for the current figure
+            lighting gouraud;  % Use Gouraud lighting (smooth shading)
+            material shiny;    % Set the material properties to 'shiny'
+            light('Position', [0.5, 0.5, 1]);  % Set the light's position
             % Hold on the have more plots in the figure
             hold on
 
@@ -49,6 +52,7 @@ classdef Assignment2 < handle
             % Load the starting position of the cups
             self.loadCups();
 
+            self.handleSystemState();
             % Run yaskawa
             self.yaskawaMove();
         end
@@ -282,7 +286,10 @@ classdef Assignment2 < handle
                 endEff = robot.model.fkine(qMatrix(j, :));
                 % Animate the robot to the next joint configuration
                 robot.model.animate(qMatrix(j, :));
-                GripperTr(self, endEff, robotType)
+                GripperTr(self, endEff, robotType);
+                if self.gui.usingHardware
+                    self.gui.readButtonState();
+                end
                 self.gui.updateEndEffectorPositionLabel();
                 if cupPicked
                     CupTr(self, endEff, robotType);
@@ -349,6 +356,9 @@ classdef Assignment2 < handle
         function handleSystemState(self)
             while ~self.gui.systemRunning
                 pause(0.1); 
+                if self.gui.usingHardware
+                    self.gui.readButtonState();
+                end
             end
         end
         function robotJogging(self, val, dir, robot)
