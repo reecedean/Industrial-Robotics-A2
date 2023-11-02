@@ -1,20 +1,28 @@
 classdef Assignment2_Reece < handle
     properties
-        ur5
-        yaskawa
-        environment
-        cups
-        cupsEnd
-        cupsStart
-        cupNumber = 1
-        cupsMid
+        ur5;
+        yaskawa;
+        gui;
+        environment;
+        cups;
+        cupsEnd;
+        cupsStart;
+        cupNumber = 1;
+        ur5Mid;
+        cupPick;
+        yaskState;
+        wayPoints;
+        cuppickedUp_yask;
+        cuppickedUp_ur5;
+        ur5State;
+        gripperUr5;
+        gripperYaskawa;
         collisionRectangles = { 
             struct('lower', [0.6,-1,0.7], 'upper', [1.5,1.5,0.75]), ... Bench 1
             struct('lower', [-0.8,-1.8,0.65], 'upper', [1.5,-1,0.7]), ... Bench 2
             struct('lower', [1.5,1.5,0], 'upper', [1.55,-2.5,2.5]), ... Wall
             struct('lower', [1.2,-0.2,1.2], 'upper', [1.5,1.5,1.15]), ... Shelf 
-    
-            };
+        };
 
         rectPrismData;
     end
@@ -23,16 +31,23 @@ classdef Assignment2_Reece < handle
         function self = Assignment2_Reece()
             % Set up the workspace environment
             self.environment = CafeEnvironment();
+
+            self.rectPrismData = cell(length(self.collisionRectangles),3);
+            
+            for i = 1:length(self.collisionRectangles)
+                [tempVertex, tempFace, tempFaceNormals] = RectangularPrism(self.collisionRectangles{i}.lower, self.collisionRectangles{i}.upper);
+                self.rectPrismData{i,1} = tempVertex;
+                self.rectPrismData{i,2} = tempFace;
+                self.rectPrismData{i,3} = tempFaceNormals;
+            end
             
             % Hold on the have more plots in the figure
             hold on
 
             % Create linear UR5 object
             self.ur5 = LinearUR5custom();
-            startJoint = [0 0 0 0 270*pi/180 -pi/2 0];
+            startJoint = [-0.5 0 0 0 270*pi/180 -pi/2 0];
             self.ur5.model.animate(startJoint);
-
-            self.ur5.model.teach(startJoint);
     
             
             % Create the Yaskawa
@@ -40,273 +55,264 @@ classdef Assignment2_Reece < handle
 
             startJoint2 = [2.9671 -0.4346 0.3700  3.1416 0 0];
             self.yaskawa.model.animate(startJoint2);
-            % self.yaskawa.model.teach(startJoint2);
 
+            % Initialise the user interface
+            self.gui = GUI(self.ur5, self.yaskawa);
+            self.gui.assignment2 = self;
+            self.gui.updateEndEffectorPositionLabel();
 
+            % Load the grippers
+            self.gripperPos();
             % Load the starting position of the cups
             self.loadCups();
 
-            self.rectPrismData = cell(length(self.collisionRectangles),3);
-
-            for i = 1: length(self.collisionRectangles)
-                [tempVertex, tempFace, tempFaceNormals] = RectangularPrism(self.collisionRectangles{i}.lower, self.collisionRectangles{i}.upper);
-                self.rectPrismData{i,1} = tempVertex;
-                self.rectPrismData{i,2} = tempFace;
-                self.rectPrismData{i,3} = tempFaceNormals;
-            end
-
-            input('Press enter to continue');
-            
-            % self.yaskawa.model.teach()
-            % Run UR5 to place the cup
+            % Run yaskawa
             self.yaskawaMove();
-
-            self.ur5Move();
+           
            
         end
+
+        function gripperPos(self)
+            q = self.yaskawa.model.getpos();
+            % get the current end effector position
+            endEff = self.yaskawa.model.fkine(q);
+            % initalise gripper at the current end effector position
+            self.gripperYaskawa = Gripper();
+            % Have gripper follow end effector
+            GripperTr(self, endEff);
+        end
+
+        function GripperTr(self, endEffTr)
+            % Get the positon of the fingers
+            F1q = self.gripperYaskawa.model.getpos();
+            % Set the bases of the finger to the endEff with rotation
+            self.gripperYaskawa.model.base = endEffTr.T * trotx(pi/2);
+            % Animate the fingers
+            self.gripperYaskawa.model.animate(F1q);
+            drawnow();
+        end
+
         function ur5Move(self)
-         % Set the offset of the gripper
-        gripperOffset = 0.085;
-        % Set the offset of the robot
-        robotOffset = 0.15;
-        % Set a cup offset;
-        cupOffset = 0.2;
-        % Get the number of cups
-        cupNum = length(self.cupsStart);
-        % intial state of cup picked up is false
-        cuppickedUp_ur5 = false;
-            for i = 1:1
-                % Loop twice for the pickup of the cup, then the drop off
-                % of the cup
-                for n = 1:2
-                    % Define the brick start and end locations for target end effector
-                    currentCupPos = self.cups{self.cupNumber}.model.base().T
-                    currentCupPos = currentCupPos(1:3, 4)'
-                    currentCupPos(3) = currentCupPos(3) + cupOffset;
-                    % cupPos = self.cupsStart{1}(1:3);
-                    cupPosend = self.cupsEnd{1}(1:3);
-                    % Apply gripper and robot offset to the bricks Z coordinate
-                    currentCupPos(3) = currentCupPos(3) + gripperOffset + robotOffset;
-                    cupPosend(3) = cupPosend(3) + gripperOffset + robotOffset;
-                    % If the brick is picked up, get to the end brick,
-                    % otherwise get transform for the starting brick
-                    if cuppickedUp_ur5
-                        % Define the transformation matrix for the target end effector location
-                        T = transl(cupPosend) * rpy2tr(0, 180, self.cupsEnd{1}(6), 'deg');
-                    else
-                        T = transl(currentCupPos) * rpy2tr(0, 180, self.cupsStart{1}(6), 'deg');
-                    end
+            % Set bool to false
+            self.cuppickedUp_ur5 = false;
+            % Set the offset of the gripper
+            gripperOffset = 0.085;
+            % Set the offset of the robot
+            robotOffset = 0.15;
+            % Set a cup offset;
+            cupOffset = 0.2;
+            % Get the current position of the cup
+            currentCupPos = self.cups{self.cupNumber}.model.base().T;
+            % Switch the transform
+            currentCupPos = currentCupPos(1:3, 4)';
+            % apply the offset for the cup
+            currentCupPos(3) = currentCupPos(3) + cupOffset + gripperOffset;
+            cupPosend = self.cupsEnd(1:3);
+            % Apply gripper and robot offset to the bricks Z coordinate
+            cupPosend(3) = cupPosend(3) + gripperOffset;
+            % Set to state of the ur5 to 1
+            self.ur5State = 1;
 
-                    % Loop twice to get to common midpoint and then brick
-                    % location
-                    for l = 1:2
-                        % intial joint config
-                        q0 = self.ur5.model.getpos();
-                        % On the first iteration, get the midpoint
-                        % joint angles. On the second iteration, get the
-                        % brick transform joint angles
-                        T_mid = transl(0, 0, 0) * rpy2tr(0, 180, 0, 'deg');
-                        if l == 1
-                            %0.9076
-                            q1 = [-0.0073 0.6283 -0.1902 1.2182 6.2832 -1.5621 -1.4888];
-                        else
-                            %q1 = self.cups{self.cupNumber}.model.base()
-                            q1 = self.ur5.model.ikcon(T, q0);
-                        end
-        
-                        % Use trapezoidal Velocity profile to move from q0 to q1
-                        steps = 25;
-                        s = lspb(0,1,steps);
-                        qMatrix = nan(steps,7);
-                        for j = 1:steps
-                            qMatrix(j,:) = (1-s(j))*q0 + s(j)*q1;
-                        end
-                        
-                        % Iterate through the trajectory and animate the robot's motion
-                        for j = 1:steps
-                            if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
-                                disp('Collision Detected! Movement Stopped');
-                            else
-                                 disp('No Collision Detected');
-                            end
-                            %disp('animating');
-                            endEff = self.ur5.model.fkine(qMatrix(j, :));
-                            % Animate the robot to the next joint configuration
-                            self.ur5.model.animate(qMatrix(j, :));
-                            if cuppickedUp_ur5
-                                CupTr(self, endEff, 2);
-                            end
-                            
-                            drawnow();
-                        end
-    % Print out joint states when the UR5 stops after reaching midpoint
-    disp('Joint states at midpoint:');
-    disp(qMatrix(end, :));
-                    end
-                    % Loop twice for the downward and upward animation of
-                    % the endeffector
-                    for j = 1:2
-                        % on the first iteration, end effector moves down
-                        if j == 1
-                            cupPosend(3) = cupPosend(3) - robotOffset;
-                            currentCupPos(3) = currentCupPos(3) - robotOffset;
-                        % on the second iteration, end effector move up
-                        elseif j == 2
-                            cupPosend(3) = cupPosend(3) + robotOffset;
-                            currentCupPos(3) = currentCupPos(3) + robotOffset;
-                        end
-                        % If the brick is picked up, get the end brick
-                        % transform, otherwise get the start transform
-                        if n == 2
-                            T = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
-                        else
-                            T = transl(currentCupPos) * rpy2tr(0, 180, 0, 'deg');
-                        end
-                        % Get current joint angles
-                        q3 = self.ur5.model.getpos();
-                        % Get the joint angles required to get to brick
-                        q4 = self.ur5.model.ikcon(T, q3);
-                        % Use quintic polynomial trajectory for the up and
-                        % downward movements
-                        tg = jtraj(q3, q4, steps);
-    
-                        for k = 1:steps
-                            % Animate the robot to the next joint configuration
-                            self.ur5.model.animate(tg(k, :));
-                            endEff = self.ur5.model.fkine(tg(k, :));
-                            % Display end effector transform as it reaches
-                            % the brick
-                            if k == steps && j == 1
-                                % endEff = endEff.T
-                                disp('End Effector Transfor: ')
-                                disp(endEff.T);
-                            end
-                            if cuppickedUp_ur5
-                            CupTr(self, endEff, 2);
-                            end
-                            drawnow();
-                            
-                        end
-
-                            % Print out joint states when the UR5 stops after reaching the cup
-    disp('Joint states at cup:');
-    disp(tg(end, :));
-                        if j == 1
-                            cuppickedUp_ur5 = ~cuppickedUp_ur5;
-                        end
-                    end
-                    
+            for i = 1:8
+                switch self.ur5State
+                    case 1
+                        % Joint Angles for common midpoint
+                        q1 = [-0.0073 0.6283 -0.1902 1.2182 6.2832 -1.5621 -1.4888];
+                    case 2
+                        % Get to position above the current cup position
+                        currentCupPos(3) = currentCupPos(3) + robotOffset;
+                        targetPos = transl(currentCupPos) * rpy2tr(0, 180, 0, 'deg');
+                    case 3
+                        % Move down onto the cup
+                        currentCupPos(3) = currentCupPos(3) - robotOffset;
+                        targetPos = transl(currentCupPos) * rpy2tr(0, 180, 0, 'deg');
+                    case 4
+                        % Switch cup flag
+                        self.cuppickedUp_ur5 = ~self.cuppickedUp_ur5;
+                        currentCupPos(3) = currentCupPos(3) + robotOffset;
+                        targetPos = transl(currentCupPos) * rpy2tr(0, 180, 0, 'deg');
+                    case 5
+                        % Joint Angles for common midpoint
+                        q1 = [-0.0073 0.6283 -0.1902 1.2182 6.2832 -1.5621 -1.4888];
+                    case 6
+                        % Move to high end position placement of cup 
+                        cupPosend(3) = cupPosend(3) + robotOffset;
+                        targetPos = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
+                    case 7
+                        % Move down to place cup
+                        cupPosend(3) = cupPosend(3) - robotOffset;
+                        targetPos = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
+                    case 8
+                        % Move back up
+                        self.cuppickedUp_ur5 = ~self.cuppickedUp_ur5;
+                        cupPosend(3) = cupPosend(3) + robotOffset;
+                        targetPos = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
                 end
-                self.cupNumber = self.cupNumber + 1;
+                if self.ur5State == 1 || self.ur5State == 5
+                    steps = 20;
+                    % Get current joint angles
+                    q0 = self.ur5.model.getpos();
+                    qFinal = q1;
+                    qMatrix = jtraj(q0, qFinal, steps);
+                else
+                    steps = 20;
+                    % Get current joint angles
+                    q0 = self.ur5.model.getpos();
+                    qFinal = self.ur5.model.ikcon(targetPos, q0);
+                    qMatrix = jtraj(q0, qFinal, steps);
+                end
+                Animate(self, qMatrix,1);
+                % Add one to the state
+                self.ur5State = self.ur5State + 1;
             end
-           
-        end
 
+        end
         function yaskawaMove(self)
             % Get the number of cups
             cupNum = length(self.cupsStart);
-            % set bool to false
-            cuppickedUp_yask = false;
-            % Loop for number of cups
-            for i = 1:1
-            % Loop twice for the pickup of the cup, then the drop off
-            % of the cup
-                for n = 1:2
-                    % Define the cup start and end locations for target end effector
-                    cupPos = self.cupsStart{1}(1:3);
-                    cupPosend = self.cupsMid(1:3);
-                    % If the brick is picked up, get to the end brick,
-                    % otherwise get transform for the starting brick
-                    if cuppickedUp_yask
-                        % Define the transformation matrix for the target end effector location
-                        T = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
-                    else
-                        T = transl(cupPos) * rpy2tr(0, 180, 0, 'deg');
+            
+            % Set bool to false
+            self.cuppickedUp_yask = false;
+            
+            % Loop for the number of cups
+            for i = 1:cupNum
+                % Define the cup start and end locations for the target end effector
+                cupPos = self.cupsStart{i}(1:3);
+                cupPos(1) = cupPos(1) - 0.1;
+                cupPos(3) = cupPos(3) + 0.1;
+                self.yaskState = 1;
+                for j = 1:10
+                    if self.yaskState == 10
+                        self.yaskState = 1;
                     end
-
-                    % Loop multiple times for waypoints
-                    for l = 1:5
-                        % intial joint config
+                    switch self.yaskState
+                        case 1
+                            % Move to its starting point
+                            targetPos = transl(self.wayPoints{1}) * rpy2tr(0, 90, 0, 'deg');
+                        case 2
+                            % Move to the cup position
+                            targetPos = transl(cupPos) * rpy2tr(0, 90, 0, 'deg');
+                            for r = 1:2
+                                if r == 1
+                                    % First move to point in yz
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'yz', 2);
+                                else
+                                    % then move to point in x
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'x', 2);
+                                end
+                                Animate(self,qMatrix,2);
+                            end
+                        case 3
+                            % Pick up the cup
+                            self.cuppickedUp_yask = ~self.cuppickedUp_yask;
+                            % Move back to starting waypoint position
+                            targetPos = transl(self.wayPoints{1}) * rpy2tr(0, 90, 0, 'deg');
+                            for r = 1:2
+                                if r == 1
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'x', 2);
+                                else
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'yz', 2);
+                                end
+                                Animate(self,qMatrix,2);
+                            end
+                        case 4
+                            % Move to safe waypoint (move base around)
+                            targetPos = transl(self.wayPoints{2}) * rpy2tr(0, 90, 0, 'deg');
+                        case 5
+                            % Move to safe waypoint (move down)
+                            targetPos = transl(self.wayPoints{3}) * rpy2tr(90, 90, 0, 'deg');
+                        case 6
+                            % Move under the coffe machine
+                            targetPos = transl(self.wayPoints{4}) * rpy2tr(90, 90, 0, 'deg');
+                            for r = 1:2
+                                if r == 1
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'yz', 2);
+                                else
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'x', 2);
+                                end
+                                Animate(self,qMatrix,2);
+                            end
+                        case 7
+                            % Move back to waypoint 3
+                            targetPos = transl(self.wayPoints{3}) * rpy2tr(90, 90, 0, 'deg');
+                        case 8
+                            % Move down to place cup
+                            targetPos = transl(self.wayPoints{5}) * rpy2tr(90, 90, 0, 'deg');
+                        case 9
+                            % Place Cup
+                            self.cuppickedUp_yask = ~self.cuppickedUp_yask;
+                            % Move back to waypoint 2 (first in yz, then in
+                            % x to avoid hitting the cup
+                            targetPos = transl(self.wayPoints{2}) * rpy2tr(90, 90, 0, 'deg');
+                            for r = 1:2
+                                if r == 1
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'yz', 2);
+                                else
+                                    qMatrix = ResolvedMotionRateControl(self, targetPos, 'x', 2);
+                                end
+                                Animate(self,qMatrix,2);
+                            end
+                    end
+        
+                    if self.yaskState == 1 || self.yaskState == 5 || self.yaskState == 8 || self.yaskState == 9
+                        steps = 20;
+                        % Get current joint angles
                         q0 = self.yaskawa.model.getpos();
-                        % We are using joint angles to get to the waypoint
-                        % transforms
-                        if n == 1
-                            if l == 1
-                                %First way point
-                                q1 = [2.9671 -0.4346 0.3700 3.1416 0 0];
-                            elseif l == 2
-                                % Get to cup start transform
-                                q1 = self.yaskawa.model.ikcon(T, q0);
-                                q1 = [q1(1:3) 3.1416 0 0];
-                                %q1 = [1.2514 2.2689 -2.2864 3.1416 0 0];
-                            elseif l == 3
-                                % Toggle the pick up cup bool
-                                cuppickedUp_yask = ~cuppickedUp_yask;
-                                % Move back to first waypoint
-                                q1 = [2.9671 -0.4346 0.3700 3.1416 0 0];
-                            elseif l == 4
-                                %Tilt base around to new position 2nd
-                                %waypoint
-                                q1 = [1.2863 -0.4346 0.3700 3.1416 0 0];
-                            end
-                        elseif n == 2
-                            if l == 1
-                                % Move down to next 3rd waypoint
-                                q1 = [1.2514 2.2689 -1.9373 3.1416 -0.3438 0];
-                            elseif l == 2
-                                % Move to 4th waypoint under the coffee
-                                % machine
-                                q1 = [2.0420 2.2689 -1.9373 3.1416 -0.3438 0];
-                            elseif l == 3
-                                % Move back to 3rd waypoint
-                                q1 = [1.2514 2.2689 -1.9373 3.1416 -0.3438 0];
-                            elseif l == 4
-                                % Move down to place the cup 
-                                q1 = [1.2514 2.2689 -1.7628 3.1416 -0.5149 0];
-                            else
-                                % Move back to 2nd waypoint
-                                q1 = [1.2863 -0.4346 0.3700 3.1416 0 0];
-                            end
-                        end
-
-                        % Use trapezoidal Velocity profile to move from q0 to q1
-                        steps = 25;
-                        s = lspb(0,1,steps);
-                        qMatrix = nan(steps,6);
-                        for j = 1:steps
-                            qMatrix(j,:) = (1-s(j))*q0 + s(j)*q1;
-                        end
-
-                        % Iterate through the trajectory and animate the robot's motion
-                        for j = 1:steps
-                            if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
-                                disp('Collision Detected! Movement Stopped');
-                            else
-                                 disp('No Collision Detected');
-                            end
-                            %disp('animating');
-                            endEff = self.yaskawa.model.fkine(qMatrix(j, :));
-                            % Animate the robot to the next joint configuration
-                            self.yaskawa.model.animate(qMatrix(j, :));
-                            if cuppickedUp_yask
-                                CupTr(self, endEff, 1);
-                            end
-                            drawnow();
-                        end
-                        if l == 4  && n == 2
-                            cuppickedUp_yask = ~cuppickedUp_yask;
-                        end
-                        if l == 2 && n == 2
-                            disp("PREPARING COFFEE, PLEASE WAIT :)");
-                            pause(3);
-                        end
+                        qFinal = self.yaskawa.model.ikcon(targetPos, q0);
+                        qMatrix = jtraj(q0, qFinal, steps);
+                    else
+                        qMatrix = ResolvedMotionRateControl(self, targetPos, 'horizontal', 2);
                     end
+                    if self.yaskState ~= 2 || self.yaskState ~= 3 || self.yaskState ~= 6 || self.yaskState ~=9 
+                        % Animate the robot to the RMRC trajectory
+                        Animate(self, qMatrix,2);
+                    end
+                    self.yaskState = self.yaskState + 1;
                 end
+                ur5Move(self);
+                self.cupNumber = self.cupNumber + 1;
+            end  
+        end
+        function Animate(self, qMatrix, robotType)
+            if robotType == 1
+                robot = self.ur5;
+                cupPicked = self.cuppickedUp_ur5;
+            elseif robotType == 2
+                robot = self.yaskawa;
+                cupPicked = self.cuppickedUp_yask;
+            end
+            for j = 1:size(qMatrix, 1)
+                if robotType == 1
+                        if IsCollision(self.ur5, self.ur5.model.getpos(), self.rectPrismData)
+                            disp('Collision Detected! Movement Stopped');
+                        else
+                            disp('No Collision Detected');
+                        end
+                        else robotType == 2;
+                        if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
+                            disp('Collision Detected! Movement Stopped');
+                        else
+                            disp('No Collision Detected');
+                        end
+                end
+                endEff = robot.model.fkine(qMatrix(j, :));
+                % Animate the robot to the next joint configuration
+                robot.model.animate(qMatrix(j, :));
+                self.gui.updateEndEffectorPositionLabel();
+                if cupPicked
+                    CupTr(self, endEff, robotType);
+                end
+                drawnow();
+                
             end
         end
-
         function CupTr(self, endEffTr, robot)
             if robot == 1
+                CupPos = endEffTr.T;
+                CupPos(3,4) = CupPos(3,4) - 0.3;
+                self.cups{self.cupNumber}.model.base = CupPos * trotx(pi);
+                self.cups{self.cupNumber}.model.animate(CupPos);
+            elseif robot == 2
                 CupPos = endEffTr.T;
                 zDir = CupPos(1:3, 3);
                 xDir = CupPos(1:3, 1);
@@ -314,11 +320,6 @@ classdef Assignment2_Reece < handle
                 globalOffset = globalOffset + (xDir * 0.05);
                 CupPos(1:3, 4) = CupPos(1:3, 4) + globalOffset;
                 self.cups{self.cupNumber}.model.base = CupPos * troty(-pi/2);
-                self.cups{self.cupNumber}.model.animate(CupPos);
-            elseif robot == 2
-                CupPos = endEffTr.T;
-                CupPos(3,4) = CupPos(3,4) - 0.3;
-                self.cups{self.cupNumber}.model.base = CupPos * trotx(pi);
                 self.cups{self.cupNumber}.model.animate(CupPos);
 
             end 
@@ -331,7 +332,6 @@ classdef Assignment2_Reece < handle
                 [1.25 -0.1 1.25,0,0,0]
                 [1.25,0.1,1.25,0,0,0]
                 [1.25,0.3,1.25,0,0,0]
-                [1.25,0.5,1.25,0,0,0]
                 };
 
             % Plot each of the start cups at their location 
@@ -339,13 +339,60 @@ classdef Assignment2_Reece < handle
                 cupPos = transl(self.cupsStart{i}(1:3));
                 self.cups{i} = Cup(cupPos);
             end
-            self.cupsEnd = {
-                [-0.3,-1.2,0.95,0,0,0]
-                [-0.5,-1.2,0.8,0,0,0]
-                [-0.5,-1.5,0.8,0,0,0]
-                [-0.5,-1.5,0.8,0,0,0]
+            self.cupsEnd = [-0.3,-1.2,0.95,0,0,0];
+
+            self.ur5Mid = [0.140 -0.682 1.442];
+
+            self.wayPoints = {
+                [1.047 0.05646 1.404]
+                [0.7296 -0.1407 1.404]
+                [0.70 -0.3903 0.8835]
+                [1.05 -0.37 0.92]
+                [0.70 -0.40 0.80]
                 };
-            self.cupsMid = [1.0,-0.7,0.8,0,0,0];
+        end
+        function updateUR5(self, jointAngles)
+            self.ur5.model.animate(jointAngles)
+            self.gui.updateEndEffectorPositionLabel()
+        end
+        function updateYaskawa(self, jointAngles)
+            self.yaskawa.model.animate(jointAngles)
+            self.gui.updateEndEffectorPositionLabel()
+        end
+        function handleSystemState(self)
+            while ~self.gui.systemRunning
+                pause(0.1); 
+            end
+        end
+        function robotJogging(self, val, dir, robot)
+            if dir == 1
+                plane = 'x';
+            elseif dir == 2
+                plane = 'y';
+            else
+                plane = 'z';
+            end
+            
+            if robot == 1
+                q0 = self.ur5.model.getpos();
+                endEff = self.ur5.model.fkine(q0);
+                endEff = endEff.T;
+                disp(endEff(dir,4))
+                endEff(dir,4) = endEff(dir,4) + val;
+                qMatrix = ResolvedMotionRateControl(self, endEff, plane, robot);
+                self.ur5.model.animate(qMatrix)
+                self.gui.updateEndEffectorPositionLabel()
+            else
+                q0 = self.yaskawa.model.getpos();
+                endEff = self.yaskawa.model.fkine(q0);
+                endEff = endEff.T;
+                disp(endEff(dir,4))
+                endEff(dir,4) = endEff(dir,4) + val;
+                qMatrix = ResolvedMotionRateControl(self, endEff, plane, robot);
+                self.yaskawa.model.animate(qMatrix)
+                self.gui.updateEndEffectorPositionLabel()
+            end
+
         end
     end
 end

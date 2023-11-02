@@ -12,6 +12,7 @@ classdef CafeEnvironment < handle
             main.placeEmergencyStop;
             main.placeCoffeeMachine;
             main.placeWalls;
+            main.placeLightCurtain;
         end
         
         function placeBartop(main)
@@ -30,6 +31,11 @@ classdef CafeEnvironment < handle
 
         function placeGate(main)
             gate = PlaceObject('@Ply Files/Gate_Black.ply', [0,0,0;0,0,0]);
+        end
+
+        function placeLightCurtain(main)
+            lightcurtain1 = PlaceObject('@Ply Files/lightcurtain.ply', [-0.6,0.4,0.7]);
+            lightcurtain2 = PlaceObject('@Ply Files/lightcurtain2.ply', [-0.6,-2.4,0.7]);
         end
 
         function placeEmergencyStop(main)
