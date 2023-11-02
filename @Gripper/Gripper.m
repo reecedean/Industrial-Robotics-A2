@@ -9,28 +9,45 @@ classdef Gripper < RobotBaseClass
     methods
 %% Constructor
         function self = Gripper(baseTr)
-            if nargin < 3
-                if nargin == 2
-                    error('If you set useTool you must pass in the toolFilename as well');
-                elseif nargin == 0 % Nothing passed
-                    baseTr = transl(0,0,0);  
-                end             
-            else % All passed in 
-                % self.useTool = useTool;
-                % toolTrData = load([toolFilename,'.mat']);
-                % self.toolTr = toolTrData.tool;
-                % self.toolFilename = [toolFilename,'.ply'];
+            if nargin < 1
+                baseTr = eye(4);
+
             end
-            self.workspace = [-10 10 -10 10 -10 10];
             
             self.CreateModel();
-			self.model.base = self.model.base.T * baseTr
+			self.model.base = self.model.base.T * baseTr * trotx(pi/2);
             %self.model.tool = self.toolTr;
             self.PlotAndColourRobot();
             axis equal;
             axis auto;
             drawnow
         end
+    %% Close Gripper
+    function gripperControl(self, action)
+        steps = 10;
+        startQ = self.model.getpos;
+
+        if action == "close"
+            newQ = [0.04, -0.08];
+            qMatrix = jtraj(startQ, newQ, steps);
+
+            for j = 1:steps
+                % Animate the trajectory for gripper location
+                self.model.animate(qMatrix(j, :));
+                drawnow();
+            end
+        end
+        if action == "open"
+            newQ = [0.0, 0.0];
+            qMatrix = jtraj(startQ, newQ, steps);
+
+            for j = 1:steps
+                % Animate the trajectory for gripper location
+                self.model.animate(qMatrix(j, :));
+                drawnow();
+            end
+        end
+    end
 
 %% CreateModel
         function CreateModel(self)
@@ -41,18 +58,9 @@ classdef Gripper < RobotBaseClass
             link(1).qlim = [0 0.06];
             link(2).qlim = [-0.12 0];
 
-
-            
             self.model = SerialLink(link,'name',self.name);
         end 
 
-        function closeGripper(self)
-            q_open = [0, 0];
-            % Animate the gripper to the open position
-            self.model.animate(q_open);
-            self.model.animate(q_open);
-
-        end
 
         %% InitiliseRobotPlot
         % First and only time to plot the robot
@@ -63,7 +71,6 @@ classdef Gripper < RobotBaseClass
             % Display robot
             [ax,by] = view;
             
-            roughMinMax = sum(abs(self.model.d) + abs(self.model.a));
             self.workspace = [-1 1 -1 1 -1 1];
 
             self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by]);%,'notiles');            
