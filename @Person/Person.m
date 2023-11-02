@@ -1,13 +1,13 @@
-classdef Cup < RobotBaseClass
-%% Robot class for Cup Model
+classdef Person < RobotBaseClass
+%% Robot model for person to demonstrate light curtain sensing
 
     properties(Access = public)              
-        plyFileNameStem = 'Cup'; 
+        plyFileNameStem = 'personMaleCasual'; 
     end
     
     methods
 %% Define robot Function 
-        function self = Cup(baseTr) 
+        function self = Person(baseTr) 
 			self.CreateModel();
             if nargin < 1			
 				baseTr = transl(0,0,-0.1);			
