@@ -17,6 +17,11 @@ classdef Assignment2_Reece < handle
         ur5State;
         gripperUr5;
         gripperYaskawa;
+        person;
+        personPt1;
+        personPt2;
+        personPos;
+        lightCurtain;
         collisionRectangles = { 
             struct('lower', [0.6,-1,0.7], 'upper', [1.5,1.5,0.75]), ... Bench 1
             struct('lower', [-0.8,-1.8,0.65], 'upper', [1.5,-1,0.7]), ... Bench 2
@@ -63,6 +68,12 @@ classdef Assignment2_Reece < handle
 
             % Load the grippers
             self.gripperPos();
+
+            % Load person and light curtain
+            self.person = Person(transl(-1.5, -1, 0));
+            self.personPt1 = [-1.5, -1, 1];
+            self.lightCurtain = LightCurtain();
+
             % Load the starting position of the cups
             self.loadCups();
 
@@ -305,6 +316,34 @@ classdef Assignment2_Reece < handle
                 drawnow();
                 
             end
+            if isvalid(self.person)
+            tr = self.person.model.base;
+            tr = tr.T;
+            self.personPos = tr(1:3,4)';
+            self.personPt2 = self.personPos;
+            self.personPt2(3) = self.personPt2(3) + 0.5;
+            self.personPt2(1) = self.personPt2(1) + 0.15;
+            self.personPos(1) = self.personPos(1) + 0.05;
+            self.person.model.base = transl(self.personPos);
+            self.person.model.animate(0);
+            drawnow();
+            
+                [intersectionPoint, check] = LinePlaneIntersection(self.lightCurtain.normals(1,:), self.lightCurtain.midPoints(1,:), self.personPt1, self.personPt2);
+                if check == 1
+                    if intersectionPoint(1) > self.lightCurtain.xLims(1) && intersectionPoint(1) < self.lightCurtain.xLims(2)
+                        if intersectionPoint(2) > self.lightCurtain.yLims(1) && intersectionPoint(2) < self.lightCurtain.yLims(2)
+                            if intersectionPoint(3) > self.lightCurtain.zLims(1) && intersectionPoint(3) < self.lightCurtain.zLims(2)
+                                disp(['Collision with Light Curtain, stopping system', num2str(i)])
+                                self.gui.estop = true;
+                                try
+                                    delete(self.person);
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
         end
         function CupTr(self, endEffTr, robot)
             if robot == 1
@@ -377,7 +416,7 @@ classdef Assignment2_Reece < handle
                 q0 = self.ur5.model.getpos();
                 endEff = self.ur5.model.fkine(q0);
                 endEff = endEff.T;
-                disp(endEff(dir,4))
+                % disp(endEff(dir,4))
                 endEff(dir,4) = endEff(dir,4) + val;
                 qMatrix = ResolvedMotionRateControl(self, endEff, plane, robot);
                 self.ur5.model.animate(qMatrix)
@@ -386,7 +425,7 @@ classdef Assignment2_Reece < handle
                 q0 = self.yaskawa.model.getpos();
                 endEff = self.yaskawa.model.fkine(q0);
                 endEff = endEff.T;
-                disp(endEff(dir,4))
+                % disp(endEff(dir,4))
                 endEff(dir,4) = endEff(dir,4) + val;
                 qMatrix = ResolvedMotionRateControl(self, endEff, plane, robot);
                 self.yaskawa.model.animate(qMatrix)

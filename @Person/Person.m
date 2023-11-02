@@ -10,9 +10,9 @@ classdef Person < RobotBaseClass
         function self = Person(baseTr) 
 			self.CreateModel();
             if nargin < 1			
-				baseTr = transl(0,0,-0.1);			
+				baseTr = eye(4);			
             end
-            self.model.base = baseTr
+            self.model.base = self.model.base.T * baseTr;
             self.PlotAndColourRobot();
         end
         
