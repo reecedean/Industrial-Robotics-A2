@@ -8,6 +8,15 @@ classdef Assignment2_Reece < handle
         cupsStart
         cupNumber = 1
         cupsMid
+        collisionRectangles = { 
+            struct('lower', [0.6,-1,0.7], 'upper', [1.5,1.5,0.75]), ... Bench 1
+            struct('lower', [-0.8,-1.8,0.65], 'upper', [1.5,-1,0.7]), ... Bench 2
+            struct('lower', [1.5,1.5,0], 'upper', [1.55,-2.5,2.5]), ... Wall
+            struct('lower', [1.2,-0.2,1.2], 'upper', [1.5,1.5,1.15]), ... Shelf 
+    
+            };
+
+        rectPrismData;
     end
     
     methods 
@@ -36,6 +45,15 @@ classdef Assignment2_Reece < handle
 
             % Load the starting position of the cups
             self.loadCups();
+
+            self.rectPrismData = cell(length(self.collisionRectangles),3);
+
+            for i = 1: length(self.collisionRectangles)
+                [tempVertex, tempFace, tempFaceNormals] = RectangularPrism(self.collisionRectangles{i}.lower, self.collisionRectangles{i}.upper);
+                self.rectPrismData{i,1} = tempVertex;
+                self.rectPrismData{i,2} = tempFace;
+                self.rectPrismData{i,3} = tempFaceNormals;
+            end
 
             input('Press enter to continue');
             
@@ -106,6 +124,11 @@ classdef Assignment2_Reece < handle
                         
                         % Iterate through the trajectory and animate the robot's motion
                         for j = 1:steps
+                            if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
+                                disp('Collision Detected! Movement Stopped');
+                            else
+                                 disp('No Collision Detected');
+                            end
                             %disp('animating');
                             endEff = self.ur5.model.fkine(qMatrix(j, :));
                             % Animate the robot to the next joint configuration
@@ -113,9 +136,12 @@ classdef Assignment2_Reece < handle
                             if cuppickedUp_ur5
                                 CupTr(self, endEff, 2);
                             end
+                            
                             drawnow();
                         end
-
+    % Print out joint states when the UR5 stops after reaching midpoint
+    disp('Joint states at midpoint:');
+    disp(qMatrix(end, :));
                     end
                     % Loop twice for the downward and upward animation of
                     % the endeffector
@@ -159,7 +185,12 @@ classdef Assignment2_Reece < handle
                             CupTr(self, endEff, 2);
                             end
                             drawnow();
+                            
                         end
+
+                            % Print out joint states when the UR5 stops after reaching the cup
+    disp('Joint states at cup:');
+    disp(tg(end, :));
                         if j == 1
                             cuppickedUp_ur5 = ~cuppickedUp_ur5;
                         end
@@ -171,96 +202,6 @@ classdef Assignment2_Reece < handle
            
         end
 
-        % function yaskawaMove(self)
-        %     % Get the number of cups
-        %     cupNum = length(self.cupsStart);
-        %     % Initialize bool to false
-        %     cuppickedUp_yask = false;
-        % 
-        %     % Define two sets of waypoints
-        %     Waypoint1 = [2.9671 -0.4346 0.3700 3.1416 0 0]
-        %     Waypoint2 = [1.2514 2.2689 -2.2864 3.1416 0 0]
-        % 
-        %     for i = 1:2
-        %         % Loop for the pickup of the cup and the drop-off of the cup
-        %         % Toggle between Waypoint1 and Waypoint2
-        %         if cuppickedUp_yask
-        %             WaypointStart = Waypoint1;
-        %             WaypointEnd = Waypoint2;
-        %         else
-        %             WaypointStart = Waypoint2;
-        %             WaypointEnd = Waypoint1;
-        %         end
-        % 
-        %         % Define the brick start and end locations for the target end effector
-        %         cupPos = self.cupsStart{1}(1:3);
-        %         cupPosend = self.cupsMid(1:3);
-        % 
-        %         % If the brick is picked up, get to the end brick,
-        %         % otherwise get the transform for the starting brick
-        %         if cuppickedUp_yask
-        %             % Define the transformation matrix for the target end effector location
-        %             T = transl(cupPosend) * rpy2tr(0, 90, 0, 'deg');
-        %         else
-        %             T = transl(cupPos) * rpy2tr(0, 90, 0, 'deg');
-        %         end
-        % 
-        %         % Use a common mid transform between the start and end brick position 
-        %         T_mid = transl(1, 0, 1.5) * rpy2tr(0, 180, 0, 'deg');
-        % 
-        %         % Move to the starting waypoint
-        %         q0 = self.yaskawa.model.getpos();
-        %         q_waypoint_start = WaypointStart %self.yaskawa.model.ikcon(transl(WaypointStart) * rpy2tr(WaypointStart(4:6), 'deg'), q0);
-        % 
-        %         % Use trapezoidal Velocity profile to move from q0 to q_waypoint_start
-        %         steps = 25;
-        %         s = lspb(0, 1, steps);
-        %         qMatrix = nan(steps, 6);
-        %         for j = 1:steps
-        %             qMatrix(j, :) = (1 - s(j)) * q0 + s(j) * q_waypoint_start;
-        %         end
-        % 
-        %         % Iterate through the trajectory and animate the robot's motion
-        %         for j = 1:steps
-        %             disp('animating');
-        %             endEff = self.yaskawa.model.fkine(qMatrix(j, :));
-        %             % Animate the robot to the next joint configuration
-        %             self.yaskawa.model.animate(qMatrix(j, :));
-        %             if cuppickedUp_yask
-        %                 CupTr(self, endEff);
-        %             end
-        %             drawnow();
-        %         end
-        % 
-        %         % Move to the cup start or end position
-        %         q0 = q_waypoint_start;
-        %         q_cup_position = self.yaskawa.model.ikcon(T, q0);
-        % 
-        %         % Use trapezoidal Velocity profile to move from q0 to q_cup_position
-        %         steps = 25;
-        %         s = lspb(0, 1, steps);
-        %         qMatrix = nan(steps, 6);
-        %         for j = 1:steps
-        %             qMatrix(j, :) = (1 - s(j)) * q0 + s(j) * q_cup_position;
-        %         end
-        % 
-        %         % Iterate through the trajectory and animate the robot's motion
-        %         for j = 1:steps
-        %             disp('animating');
-        %             endEff = self.yaskawa.model.fkine(qMatrix(j, :));
-        %             % Animate the robot to the next joint configuration
-        %             self.yaskawa.model.animate(qMatrix(j, :));
-        %             if cuppickedUp_yask
-        %                 CupTr(self, endEff);
-        %             end
-        %             drawnow();
-        %         end
-        % 
-        %         % Toggle the cuppickedUp_yask state for the next iteration
-        %         cuppickedUp_yask = ~cuppickedUp_yask;
-        %     end
-        %     self.cupNumber = self.cupNumber + 1;
-        % end
         function yaskawaMove(self)
             % Get the number of cups
             cupNum = length(self.cupsStart);
@@ -338,6 +279,11 @@ classdef Assignment2_Reece < handle
 
                         % Iterate through the trajectory and animate the robot's motion
                         for j = 1:steps
+                            if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
+                                disp('Collision Detected! Movement Stopped');
+                            else
+                                 disp('No Collision Detected');
+                            end
                             %disp('animating');
                             endEff = self.yaskawa.model.fkine(qMatrix(j, :));
                             % Animate the robot to the next joint configuration
