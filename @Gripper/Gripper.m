@@ -2,8 +2,8 @@ classdef Gripper < RobotBaseClass
     %% LinearUR3 gripper FINGER
     properties(Access = public)   
         plyFileNameStem = 'gripper';
-        finger1
-        finger2
+        finger1;
+        finger2;
     end
     
     methods
@@ -73,7 +73,7 @@ classdef Gripper < RobotBaseClass
             
             self.workspace = [-1 1 -1 1 -1 1];
 
-            self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by]);%,'notiles');            
+            self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by],'nowrist');%,'notiles');            
 
             % Check if a single surface has been added by plot3d
             if self.CountTiledFloorSurfaces() - initialSurfaceCount == 1
@@ -82,7 +82,7 @@ classdef Gripper < RobotBaseClass
 
             % Check if a light needs to be added
             if isempty(findobj(get(gca,'Children'),'Type','Light'))
-                camlight
+                camlight;
                 self.lightAdded = true;
             end
 
@@ -100,8 +100,8 @@ classdef Gripper < RobotBaseClass
             end
 
             if exist([self.plyFileNameStem,'.mat'],'file') == 2 && exist([self.plyFileNameStem,'Link0.ply'],'file') ~= 2
-                warning('There are no ply files for the links but there is a mat file. You should use PlotAndColourRobotMat to create and colour a 3D robot model plot. I am doing this for you now.')
-                self.PlotAndColourRobotMat()
+                warning('There are no ply files for the links but there is a mat file. You should use PlotAndColourRobotMat to create and colour a 3D robot model plot. I am doing this for you now.');
+                self.PlotAndColourRobotMat();
                 return;
             end
 
