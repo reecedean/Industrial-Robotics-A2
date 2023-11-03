@@ -13,6 +13,7 @@ classdef CafeEnvironment < handle
             main.placeCoffeeMachine;
             main.placeWalls;
             main.placeLightCurtain;
+            main.placeExtinguisher;
         end
         
         function placeBartop(main)
@@ -44,6 +45,10 @@ classdef CafeEnvironment < handle
 
         function placeCoffeeMachine(main)
             CoffeeMachine = PlaceObject('@Ply Files/Coffee_Machine.ply', [0,0,0;0,0,0]);
+        end
+
+        function placeExtinguisher(main)
+            placeExtinguisher = PlaceObject('@Ply Files/fireExtinguisher.ply', [0.5,1.4,0]);
         end
 
         function placeWalls(main)

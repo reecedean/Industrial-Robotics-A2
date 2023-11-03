@@ -340,16 +340,19 @@ classdef Assignment_Jared < handle
                 plot3(intersectionPoint(1), intersectionPoint(2), intersectionPoint(3), 'g*');
                 disp("Collssion Detected: E-Stop Activated")
                 self.gui.estop = true;
+                try
+                    delete(self.person);
+                end
             end
             end
 
         end
 
         function lightCurtain(self)
-            numLines = 25;
+            numLines = 15;
             x = -0.55;
             
-            zstart = 2.5;
+            zstart = 1.6;
             zend = 0.745;
             z = linspace(zstart, zend, numLines);
             

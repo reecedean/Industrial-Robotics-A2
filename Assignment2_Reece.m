@@ -294,17 +294,17 @@ classdef Assignment2_Reece < handle
             end
             for j = 1:size(qMatrix, 1)
                 if robotType == 1
-                        if IsCollision(self.ur5, self.ur5.model.getpos(), self.rectPrismData)
-                            disp('Collision Detected! Movement Stopped');
-                        else
-                            disp('No Collision Detected');
-                        end
+                        % if IsCollision(self.ur5, self.ur5.model.getpos(), self.rectPrismData)
+                        %     disp('Collision Detected! Movement Stopped');
+                        % else
+                        %     disp('No Collision Detected');
+                        % end
                         else robotType == 2;
-                        if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
-                            disp('Collision Detected! Movement Stopped');
-                        else
-                            disp('No Collision Detected');
-                        end
+                        % if IsCollision(self.yaskawa, self.yaskawa.model.getpos(), self.rectPrismData)
+                        %     disp('Collision Detected! Movement Stopped');
+                        % else
+                        %     disp('No Collision Detected');
+                        % end
                 end
                 endEff = robot.model.fkine(qMatrix(j, :));
                 % Animate the robot to the next joint configuration
@@ -314,34 +314,8 @@ classdef Assignment2_Reece < handle
                     CupTr(self, endEff, robotType);
                 end
                 drawnow();
-                
-            end
-            if isvalid(self.person)
-            tr = self.person.model.base;
-            tr = tr.T;
-            self.personPos = tr(1:3,4)';
-            self.personPt2 = self.personPos;
-            self.personPt2(3) = self.personPt2(3) + 0.5;
-            self.personPt2(1) = self.personPt2(1) + 0.15;
-            self.personPos(1) = self.personPos(1) + 0.05;
-            self.person.model.base = transl(self.personPos);
-            self.person.model.animate(0);
-            drawnow();
-            
-                [intersectionPoint, check] = LinePlaneIntersection(self.lightCurtain.normals(1,:), self.lightCurtain.midPoints(1,:), self.personPt1, self.personPt2);
-                if check == 1
-                    if intersectionPoint(1) > self.lightCurtain.xLims(1) && intersectionPoint(1) < self.lightCurtain.xLims(2)
-                        if intersectionPoint(2) > self.lightCurtain.yLims(1) && intersectionPoint(2) < self.lightCurtain.yLims(2)
-                            if intersectionPoint(3) > self.lightCurtain.zLims(1) && intersectionPoint(3) < self.lightCurtain.zLims(2)
-                                disp('Collision with Light Curtain, stopping system');
-                                self.gui.estop = true;
-                                try
-                                    delete(self.person);
-                                end
-                            end
-                        end
-                    end
-                end
+                % LightCurtain - move person
+                movePerson(self);
             end
 
         end
@@ -433,5 +407,35 @@ classdef Assignment2_Reece < handle
             end
 
         end
+                         
+        function movePerson(self)
+            if isvalid(self.person)
+                tr = self.person.model.base;
+                tr = tr.T;
+                self.personPos = tr(1:3,4)';
+                self.personPt2 = self.personPos;
+                self.personPt2(3) = self.personPt2(3) + 1;
+                self.personPt2(1) = self.personPt2(1) + 0.15;
+                self.personPos(1) = self.personPos(1) + 0.05;
+                self.person.model.base = transl(self.personPos);
+                self.person.model.animate(0);
+                drawnow();
+            
+                [intersectionPoint, check] = LinePlaneIntersection(self.lightCurtain.normals(1,:), self.lightCurtain.midPoints(1,:), self.personPt1, self.personPt2);
+                if check == 1
+                    if intersectionPoint(1) > self.lightCurtain.xLims(1) && intersectionPoint(1) < self.lightCurtain.xLims(2)
+                        if intersectionPoint(2) > self.lightCurtain.yLims(1) && intersectionPoint(2) < self.lightCurtain.yLims(2)
+                            if intersectionPoint(3) > self.lightCurtain.zLims(1) && intersectionPoint(3) < self.lightCurtain.zLims(2)
+                                disp('Collision with Light Curtain, stopping system');
+                                self.gui.estop = true;
+                                try
+                                    delete(self.person);
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end      
     end
 end
