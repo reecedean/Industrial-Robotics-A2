@@ -66,7 +66,8 @@ classdef Assignment2 < handle
             self.gripperPos();
             % Load the starting position of the cups
             self.loadCups();
-
+            
+            disp('System Has been initliased. Press start to begin program');
             self.handleSystemState();
             % Run yaskawa
             self.yaskawaMove();
@@ -106,6 +107,7 @@ classdef Assignment2 < handle
         end
 
         function ur5Move(self)
+            disp('UR5 Robot in Operation');
             % Set bool to false
             self.cuppickedUp_ur5 = false;
             % Set the offset of the gripper
@@ -141,6 +143,7 @@ classdef Assignment2 < handle
                         targetPos = transl(currentCupPos) * rpy2tr(0, 180, 0, 'deg');
                     case 4
                         % Switch cup flag
+                        disp('UR5 has picked up cup...')
                         self.cuppickedUp_ur5 = ~self.cuppickedUp_ur5;
                         currentCupPos(3) = currentCupPos(3) + robotOffset;
                         targetPos = transl(currentCupPos) * rpy2tr(0, 180, 0, 'deg');
@@ -157,6 +160,7 @@ classdef Assignment2 < handle
                         targetPos = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
                     case 8
                         % Move back up
+                        disp('UR5 has placed cup...')
                         self.cuppickedUp_ur5 = ~self.cuppickedUp_ur5;
                         cupPosend(3) = cupPosend(3) + robotOffset;
                         targetPos = transl(cupPosend) * rpy2tr(0, 180, 0, 'deg');
@@ -189,6 +193,7 @@ classdef Assignment2 < handle
             
             % Loop for the number of cups
             for i = 1:cupNum
+                disp('Yaskawa Robot in Operation');
                 % Define the cup start and end locations for the target end effector
                 cupPos = self.cupsStart{i}(1:3);
                 cupPos(1) = cupPos(1) - 0.1;
@@ -217,6 +222,7 @@ classdef Assignment2 < handle
                             end
                         case 3
                             % Pick up the cup
+                            disp('Yaskawa has picked up cup');
                             self.cuppickedUp_yask = ~self.cuppickedUp_yask;
                             % Move back to starting waypoint position
                             targetPos = transl(self.wayPoints{1}) * rpy2tr(0, 90, 0, 'deg');
@@ -256,6 +262,7 @@ classdef Assignment2 < handle
                             targetPos = transl(self.wayPoints{5}) * rpy2tr(90, 90, 0, 'deg');
                         case 9
                             % Place Cup
+                            disp('Yaskawa has placed cup, ur5 can now pick it up...');
                             self.cuppickedUp_yask = ~self.cuppickedUp_yask;
                             % Move back to waypoint 2 (first in yz, then in
                             % x to avoid hitting the cup
@@ -287,7 +294,8 @@ classdef Assignment2 < handle
                 end
                 ur5Move(self);
                 self.cupNumber = self.cupNumber + 1;
-            end  
+            end
+            disp('Robots has finished operation. You can use the user interface to move robots');
         end
         function Animate(self, qMatrix, robotType)
             if robotType == 1
