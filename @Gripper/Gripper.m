@@ -73,7 +73,7 @@ classdef Gripper < RobotBaseClass
             
             self.workspace = [-1 1 -1 1 -1 1];
 
-            self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by]);%,'notiles');            
+            self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by], 'nowrist');%,'notiles');            
 
             % Check if a single surface has been added by plot3d
             if self.CountTiledFloorSurfaces() - initialSurfaceCount == 1
