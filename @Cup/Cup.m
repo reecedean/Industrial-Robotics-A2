@@ -17,11 +17,20 @@ classdef Cup < RobotBaseClass
         end
         
 %% Create the Cup model
+<<<<<<< HEAD
         function CreateModel(self)
             link(1) = Link('alpha', 0, 'a', 0, 'd', 0);
             self.model = SerialLink(link,'name',self.name);
         end
     %% InitiliseRobotPlot
+=======
+    function CreateModel(self)
+        link(1) = Link('alpha', 0, 'a', 0, 'd', 0);
+        self.model = SerialLink(link,'name',self.name);
+    end
+
+     %% InitiliseRobotPlot
+>>>>>>> 712a29e7619b89192b6eb94c27adbecbf8c66656
         % First and only time to plot the robot
         function h = InitiliseRobotPlot(self)
             self.figure_h = gcf;
@@ -32,7 +41,11 @@ classdef Cup < RobotBaseClass
             
             self.workspace = [-1 1 -1 1 -1 1];
 
+<<<<<<< HEAD
             self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by],'nowrist');%,'notiles');            
+=======
+            self.model.plot3d(self.homeQ,'noarrow','workspace',self.workspace,'view',[ax,by], 'nowrist');%,'notiles');            
+>>>>>>> 712a29e7619b89192b6eb94c27adbecbf8c66656
 
             % Check if a single surface has been added by plot3d
             if self.CountTiledFloorSurfaces() - initialSurfaceCount == 1
@@ -41,7 +54,11 @@ classdef Cup < RobotBaseClass
 
             % Check if a light needs to be added
             if isempty(findobj(get(gca,'Children'),'Type','Light'))
+<<<<<<< HEAD
                 camlight;
+=======
+                camlight
+>>>>>>> 712a29e7619b89192b6eb94c27adbecbf8c66656
                 self.lightAdded = true;
             end
 
